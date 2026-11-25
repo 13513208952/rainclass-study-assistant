@@ -55,3 +55,24 @@ clear.addEventListener('click', async () => {
 });
 
 restore().catch(error => { status.textContent = `读取设置失败：${error.message}`; });
+
+const plainAnswers = document.querySelector('#plain-answers');
+const displayStatus = document.querySelector('#display-status');
+browser.storage.local.get(ds.plainAnswersKey).then(values => {
+  plainAnswers.checked = values[ds.plainAnswersKey] === true;
+  plainAnswers.disabled = false;
+}).catch(() => { displayStatus.textContent = '无法读取显示设置。'; });
+
+plainAnswers.addEventListener('change', async () => {
+  const enabled = plainAnswers.checked;
+  plainAnswers.disabled = true;
+  try {
+    await browser.storage.local.set({ [ds.plainAnswersKey]: enabled });
+    displayStatus.textContent = '';
+  } catch {
+    plainAnswers.checked = !enabled;
+    displayStatus.textContent = '无法保存显示设置。';
+  } finally {
+    plainAnswers.disabled = false;
+  }
+});

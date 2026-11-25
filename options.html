@@ -24,6 +24,12 @@
       </div>
     </form>
     <p id="status" role="status"></p>
+    <section class="display-settings" aria-labelledby="display-title">
+      <h2 id="display-title">回复显示</h2>
+      <label><input id="plain-answers" type="checkbox" disabled> 自动消除 Markdown 格式</label>
+      <p>启用后仅显示可复制的纯文本，去除加粗、列表等格式标记；公式保留 LaTeX 原文。不改变发给 DeepSeek 的会话内容。</p>
+      <p id="display-status" role="status"></p>
+    </section>
     <section class="privacy" aria-labelledby="privacy-title">
       <h2 id="privacy-title">权限与隐私</h2>
       <p>密钥保存在当前 Firefox 配置中，不通过 Firefox 同步。提交的消息和图片会发给 DeepSeek，可能产生 API 费用。</p>

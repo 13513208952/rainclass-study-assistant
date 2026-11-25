@@ -2,6 +2,7 @@ globalThis.ds = Object.freeze({
   model: 'deepseek-flash',
   endpoint: 'https://api.deepseek.com/chat/completions',
   keyName: 'deepseekApiKey',
+  plainAnswersKey: 'deepseekPlainAnswers',
   access: {
     origins: ['<all_urls>'],
     data_collection: ['websiteContent', 'authenticationInfo'],

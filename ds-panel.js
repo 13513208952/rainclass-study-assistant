@@ -54,7 +54,17 @@
     .message { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 16px; }
     .message.user { width: fit-content; max-width: 85%; margin-inline-start: auto; padding: 9px 13px;
       border-radius: 17px 17px 5px 17px; background: var(--surface); }
-    .message.assistant strong { display: block; font-size: 12px; margin-bottom: 5px; }
+    .message.assistant { white-space: normal; }
+    .message-label { display: block; font-size: 12px; margin-bottom: 5px; }
+    .answer-body.plain { white-space: pre-wrap; }
+    .answer-body :is(p, ul, ol, pre, blockquote, table) { margin: 0 0 .65em; }
+    .answer-body :is(ul, ol) { padding-inline-start: 1.5em; }
+    .answer-body :is(h1,h2,h3,h4,h5,h6) { font-size: 1.12em; margin: .7em 0 .35em; }
+    .answer-body pre { overflow: auto; padding: 8px; border-radius: 7px; background: var(--surface); }
+    .answer-body blockquote { border-inline-start: 2px solid var(--line); padding-inline-start: 9px; color: var(--muted); }
+    .answer-body table { display: block; overflow: auto; border-collapse: collapse; }
+    .answer-body :is(th, td) { padding: 3px 6px; border: 1px solid var(--line); }
+    .answer-body a { color: var(--accent); }
     .math-block { display: block; overflow-x: auto; padding: 4px 0; white-space: normal; }
     footer { flex: none; background: var(--paper); padding: 8px 12px 10px; }
     .tools { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
@@ -182,16 +192,32 @@
     (open ? get('#close') : launcher).focus();
   }
 
+  let plainAnswers = false;
+  const answerText = new WeakMap();
+
+  function setPlainAnswers(enabled) {
+    plainAnswers = enabled;
+    for (const body of log.querySelectorAll('.answer-body')) {
+      body.classList.toggle('plain', enabled);
+      renderDsAnswer(body, answerText.get(body), enabled);
+    }
+  }
+
   function append(role, text, imageCount = 0) {
-    const item = document.createElement('p');
+    const item = document.createElement('div');
     item.className = `message ${role}`;
     if (role === 'assistant') {
       const title = document.createElement('strong');
+      title.className = 'message-label';
       title.textContent = 'DeepSeek';
-      item.append(title);
+      const body = document.createElement('div');
+      body.className = plainAnswers ? 'answer-body plain' : 'answer-body';
+      answerText.set(body, text);
+      renderDsAnswer(body, text, plainAnswers);
+      item.append(title, body);
+    } else {
+      item.append(text);
     }
-    if (role === 'assistant') appendDsMath(item, text);
-    else item.append(text);
     if (imageCount) {
       const count = document.createElement('small');
       count.textContent = `附有 ${imageCount} 张图片`;
@@ -393,6 +419,14 @@
   }, true);
 
   document.body.append(host);
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes[ds.plainAnswersKey]) {
+      setPlainAnswers(changes[ds.plainAnswersKey].newValue === true);
+    }
+  });
+  browser.storage.local.get(ds.plainAnswersKey)
+    .then(values => setPlainAnswers(values[ds.plainAnswersKey] === true))
+    .catch(console.error);
   refreshRoute();
   navigation.addEventListener('currententrychange', refreshRoute);
 })();
