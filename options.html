@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>雨课堂扩展设置</title>
+  <link rel="stylesheet" href="options.css">
+  <script defer src="ds-common.js"></script>
+  <script defer src="options.js"></script>
+</head>
+<body>
+  <main>
+    <h1>DeepSeek 问答设置</h1>
+    <p>模型：DeepSeek V4.1 Flash（<code>deepseek-flash</code>）。</p>
+    <form>
+      <label for="api-key">DeepSeek API 密钥</label>
+      <input id="api-key" type="password" autocomplete="off" spellcheck="false" maxlength="256" required>
+      <div class="actions">
+        <button id="save" type="submit">保存并启用问答</button>
+        <button id="clear" type="button">删除密钥并停用</button>
+      </div>
+    </form>
+    <p id="status" role="status"></p>
+    <p>密钥仅保存在当前 Firefox 配置中，不通过 Firefox 同步。发送问答时，密钥用于验证；所选题目的截图、文字与追问会发送给 DeepSeek，可能产生 API 费用。</p>
+    <p>Firefox 的截图接口会请求「访问所有网站的数据」。扩展只在雨课堂支持的题目页、你点击问答按钮时截取题目区域。拒绝该权限不影响视频续播。</p>
+  </main>
+</body>
+</html>

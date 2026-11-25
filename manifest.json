@@ -1,21 +1,44 @@
 {
   "manifest_version": 3,
-  "name": "雨课堂前台续播",
-  "version": "1.0.0",
-  "description": "手动播放后，静音并优先使用 2 倍速，在前台续播下一个未完成视频。",
+  "name": "雨课堂前台续播与问答",
+  "version": "1.1.0",
+  "description": "前台续播未完成视频；按需将题目截图和文字发送给 DeepSeek Flash。",
   "browser_specific_settings": {
     "gecko": {
       "id": "rainclass-foreground-playback@local",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": ["none"],
+        "optional": ["websiteContent", "authenticationInfo"]
       }
     }
+  },
+  "permissions": ["storage"],
+  "optional_host_permissions": ["<all_urls>"],
+  "background": {
+    "scripts": ["ds-common.js", "ds-background.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
   },
   "content_scripts": [
     {
       "matches": ["https://www.yuketang.cn/ai-workspace/lms-graph/*"],
       "js": ["playback.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.yuketang.cn/ai-workspace/lms-graph/*",
+        "https://www.yuketang.cn/v2/web/exam/*",
+        "https://www.yuketang.cn/v2/web/iframe-quiz/*",
+        "https://www.yuketang.cn/v2/web/studentQuiz_web/*",
+        "https://www.yuketang.cn/v2/web/quizResult/*",
+        "https://examination.xuetangx.com/exam/*",
+        "https://examination.xuetangx.com/result/*"
+      ],
+      "js": ["ds-common.js", "ds-capture.js", "ds-panel.js"],
+      "run_at": "document_idle"
     }
   ]
 }

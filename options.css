@@ -1,0 +1,10 @@
+html { color-scheme: light dark; }
+body { font: 16px/1.6 system-ui, sans-serif; margin: 16px; }
+main { max-width: 620px; margin: 64px auto; }
+form { margin-top: 24px; }
+label { display: block; font-weight: 650; }
+input, button { font: inherit; }
+input { box-sizing: border-box; width: 100%; padding: 8px; margin: 6px 0 12px; }
+button { padding: 6px 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#status { min-height: 1.6em; font-weight: 650; }
