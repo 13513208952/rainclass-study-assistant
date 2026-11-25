@@ -8,7 +8,11 @@ globalThis.ds = Object.freeze({
   },
   maxImages: 24,
   maxText: 30000,
-  quickPrompt: '我该怎么写',
+  maxAttachments: 4,
+  maxImageBytes: 4 * 1024 * 1024,
+  maxPayload: 40 * 1024 * 1024,
+  efforts: ['max', 'high', 'low', 'none'],
+  quickPrompt: '请问这个该怎么写，请简要回答',
   unit(url) {
     const { origin, pathname } = new URL(url);
     if (origin === 'https://examination.xuetangx.com' && /^\/(?:exam|result)\/\d+\/?$/.test(pathname)) return 'exam';

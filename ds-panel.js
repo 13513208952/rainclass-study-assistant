@@ -8,6 +8,7 @@
   const closeIcon = icon('<path d="m6 6 12 12M18 6 6 18"/>');
   const quickIcon = icon('<path d="M12 2.5 14 9l6.5 2-6.5 2-2 6.5L10 13l-6.5-2L10 9l2-6.5Zm6 15v4m-2-2h4"/>');
   const sendIcon = icon('<path d="M12 19V5m-6 6 6-6 6 6"/>');
+  const plusIcon = icon('<path d="M12 5v14M5 12h14"/>');
 
   shadow.innerHTML = `<style>
     :host { all: initial; position: fixed; inset: auto 20px 20px auto; z-index: 2147483647; color-scheme: light dark;
@@ -61,8 +62,19 @@
       border: 1px solid var(--line); background: var(--paper); padding: 5px 9px; color: var(--accent); font-weight: 650; }
     #quick svg { width: 16px; height: 16px; }
     #quick:hover:not(:disabled) { background: var(--surface); }
+    #next { flex: none; border: 1px solid var(--line); border-radius: 99px; background: var(--paper); padding: 5px 9px; }
+    #next:hover:not(:disabled) { background: var(--surface); }
+    select.effort { width: auto; flex: none; max-width: 105px; margin-inline-start: auto; }
+    .attachments { display: flex; gap: 8px; overflow: auto; padding: 4px 3px 8px; }
+    .attachment { position: relative; flex: none; }
+    .attachment img { display: block; width: 55px; height: 55px; object-fit: cover; border: 1px solid var(--line); border-radius: 9px; }
+    .attachment button { position: absolute; inset: 2px 2px auto auto; border: 0; border-radius: 50%; width: 22px; height: 22px;
+      background: var(--action); color: var(--action-ink); display: grid; place-items: center; padding: 0; }
+    .attachment button svg { width: 13px; height: 13px; }
+    .message small { display: block; color: var(--muted); margin-top: 2px; }
     select { width: 0; min-width: 0; flex: 1; text-overflow: ellipsis; border: 1px solid var(--line);
       border-radius: 9px; background: var(--paper); padding: 5px; font-size: 12px; }
+    #questions { width: 100%; margin-bottom: 8px; }
     form { display: flex; align-items: flex-end; gap: 8px; border: 1px solid var(--line);
       background: var(--paper); border-radius: 20px; padding: 5px; box-shadow: 0 2px 4px #0001; }
     form:focus-within { border-color: var(--muted); }
@@ -85,6 +97,7 @@
   <aside id="ds-chat" hidden aria-label="DeepSeek 学习助手">
     <header>
       <div class="identity"><span class="avatar">${quickIcon}</span><div><strong>学习助手</strong><small>DeepSeek Flash</small></div></div>
+      <button id="reset" class="icon-button" type="button" title="新会话" aria-label="新会话">${plusIcon}</button>
       <button id="settings" class="icon-button" type="button" title="设置" aria-label="设置">${settingsIcon}</button>
       <button id="close" class="icon-button" type="button" title="收起问答" aria-label="收起问答">${closeIcon}</button>
     </header>
@@ -94,10 +107,18 @@
     <footer>
       <div id="status" role="status"></div>
       <div class="tools"><button id="quick" type="button">${quickIcon}问问DS</button>
-        <select id="questions" hidden aria-label="选择要询问的题目"></select></div>
-      <form><textarea aria-label="提问" placeholder="输入你的问题…" rows="1" maxlength="4000"></textarea>
+        <button id="next" type="button">下一题</button>
+        <select id="effort" class="effort" aria-label="思考深度" title="思考深度">
+          <option value="max" selected>深度 · 最高</option><option value="high">深度 · 高</option>
+          <option value="low">深度 · 低</option><option value="none">关闭思考</option>
+        </select></div>
+      <select id="questions" hidden aria-label="选择要询问的题目"></select>
+      <div class="attachments" hidden aria-label="待发送图片"></div>
+      <input id="files" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple hidden>
+      <form><button id="attach" class="icon-button" type="button" title="添加图片" aria-label="添加图片">${plusIcon}</button>
+        <textarea aria-label="提问" placeholder="输入问题，或粘贴图片…" rows="1" maxlength="4000"></textarea>
         <button class="send" type="submit" title="发送" aria-label="发送">${sendIcon}</button></form>
-      <p id="notice">发送时会将本题截图和文字发给 DeepSeek。</p>
+      <p id="notice">仅「问问DS」自动截题；图片随消息发送。</p>
     </footer>
   </aside>`;
   const get = selector => shadow.querySelector(selector);
@@ -109,12 +130,21 @@
   const log = get('#log');
   const input = get('textarea');
   const send = get('button[type=submit]');
+  const next = get('#next');
+  const attach = get('#attach');
+  const files = get('#files');
+  const previews = get('.attachments');
+  const effort = get('#effort');
 
   let url;
   let kind;
   let selected;
   let nodes = [];
-  let conversation;
+  let turns = [];
+  let attachments = [];
+  let reading = 0;
+  let generation = 0;
+  let moving = false;
   let busy = false;
 
   function refreshRoute() {
@@ -126,10 +156,8 @@
     nodes = [];
     list.replaceChildren();
     list.hidden = true;
-    conversation = null;
-    log.replaceChildren();
-    status.textContent = '';
-    input.value = '';
+    next.hidden = !dsNavigation.supports(kind, url);
+    resetConversation();
     if (kind && !pane.hidden && !busy) refreshQuestions();
   }
 
@@ -154,7 +182,7 @@
     (open ? get('#close') : launcher).focus();
   }
 
-  function append(role, text) {
+  function append(role, text, imageCount = 0) {
     const item = document.createElement('p');
     item.className = `message ${role}`;
     if (role === 'assistant') {
@@ -164,50 +192,128 @@
     }
     if (role === 'assistant') appendDsMath(item, text);
     else item.append(text);
+    if (imageCount) {
+      const count = document.createElement('small');
+      count.textContent = `附有 ${imageCount} 张图片`;
+      item.append(count);
+    }
     log.append(item);
     log.scrollTop = log.scrollHeight;
   }
 
-  function lock(locked) {
-    busy = locked;
-    for (const control of [quick, list, send]) control.disabled = locked;
+  function refreshControls() {
+    for (const control of [quick, list, send, attach]) control.disabled = busy || moving || reading > 0;
+    next.disabled = busy || moving;
   }
 
-  async function ask(prompt, newQuestion) {
-    refreshRoute();
-    if (!kind || busy || !prompt) return;
-    const here = url;
-    const node = refreshQuestions();
-    if (!node) {
-      status.textContent = '未找到已显示的题目。请先打开图文正文或一道测试题。';
-      return;
-    }
-    lock(true);
+  function renderAttachments() {
+    previews.replaceChildren(...attachments.map(file => {
+      const preview = document.createElement('span');
+      preview.className = 'attachment';
+      const image = document.createElement('img');
+      image.src = file.data;
+      image.alt = file.name;
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.title = `移除 ${file.name}`;
+      remove.setAttribute('aria-label', remove.title);
+      remove.innerHTML = closeIcon;
+      remove.addEventListener('click', () => {
+        if (busy || moving) return;
+        attachments = attachments.filter(item => item !== file);
+        renderAttachments();
+      });
+      preview.append(image, remove);
+      return preview;
+    }));
+    previews.hidden = !attachments.length;
+  }
+
+  function resetConversation() {
+    generation++;
+    turns = [];
+    attachments = [];
+    renderAttachments();
+    log.replaceChildren();
+    status.textContent = '';
+    input.value = '';
+  }
+
+  async function addImages(images) {
+    if (busy || moving || reading || !images.length) return;
+    const session = generation;
+    reading++;
+    refreshControls();
     try {
-      const available = await browser.runtime.sendMessage({ type: 'ds:ready', url: here });
-      if (here !== location.href) return;
-      if (!available?.ready) throw new Error('请先打开右上角「设置」，保存 API 密钥并启用截图问答。');
-      if (newQuestion || conversation?.node !== node) {
+      let refused = 0;
+      for (const file of images) {
+        if (attachments.length >= ds.maxAttachments || file.size > ds.maxImageBytes ||
+            !/^image\/(?:jpeg|png|gif|webp)$/.test(file.type)) {
+          refused++;
+          continue;
+        }
+        const data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('无法读取图片。'));
+          reader.readAsDataURL(file);
+        });
+        if (session !== generation) return;
+        if (!attachments.some(item => item.data === data)) attachments.push({ data, name: file.name || '剪贴板图片' });
+      }
+      status.textContent = refused ? '最多 4 张，每张不超过 4 MB，支持 JPG、PNG、GIF、WebP。' : '';
+    } catch (error) {
+      if (session === generation) status.textContent = error.message;
+    } finally {
+      reading--;
+      renderAttachments();
+      refreshControls();
+    }
+  }
+
+  async function ask(prompt, includeQuestion) {
+    refreshRoute();
+    if (!kind || busy || moving || reading || (!prompt && !attachments.length)) return;
+    const here = url;
+    const session = generation;
+    const valid = () => session === generation && here === location.href;
+    const current = { prompt, text: '', images: attachments.map(file => file.data) };
+    const userImages = current.images.length;
+    const draft = input.value;
+    busy = true;
+    refreshControls();
+    try {
+      if (includeQuestion) {
+        const node = refreshQuestions();
+        if (!node) throw new Error('未找到已显示的题目。请先打开图文正文或一道测试题。');
         status.textContent = '正在截取题目…';
         const images = await questionCapture.capture(node, here, host);
-        if (here !== location.href) return;
-        conversation = { node, text: questionCapture.textOf(node).slice(0, ds.maxText), images, turns: [] };
+        if (!valid()) return;
+        current.text = questionCapture.textOf(node).slice(0, ds.maxText);
+        current.images = [...new Set([...images, ...current.images])];
+      }
+      status.textContent = effort.value === 'none' ? '正在等待 DeepSeek 回复…' : 'DeepSeek 正在思考…';
+      const response = await browser.runtime.sendMessage({
+        type: 'ds:ask', url: here, turns: includeQuestion ? [] : turns, current, effort: effort.value,
+      });
+      if (!valid()) return;
+      if (!response?.answer) throw new Error(response?.error || 'DeepSeek 未返回回复。');
+      if (includeQuestion) {
+        turns = [];
         log.replaceChildren();
       }
-      const { text, images, turns } = conversation;
-      status.textContent = '正在等待 DeepSeek 回复…';
-      append('user', prompt);
-      const response = await browser.runtime.sendMessage({ type: 'ds:ask', url: here, text, images, turns, prompt });
-      if (here !== location.href) return;
-      if (!response?.answer) throw new Error(response?.error || 'DeepSeek 未返回回复。');
-      turns.push({ prompt, answer: response.answer });
-      if (turns.length > 12) turns.shift();
+      turns.push({ ...current, answer: response.answer });
+      append('user', prompt, userImages);
       append('assistant', response.answer);
+      if (!includeQuestion && input.value === draft) input.value = '';
+      attachments = [];
+      renderAttachments();
       status.textContent = '';
     } catch (error) {
-      if (here === location.href) status.textContent = error.message;
+      if (valid()) status.textContent = error.message;
     } finally {
-      lock(false);
+      busy = false;
+      refreshControls();
       refreshRoute();
     }
   }
@@ -218,10 +324,47 @@
   });
   get('form').addEventListener('submit', event => {
     event.preventDefault();
-    if (!event.isTrusted || busy || !input.value.trim()) return;
-    const prompt = input.value.trim();
-    input.value = '';
-    ask(prompt, false);
+    if (event.isTrusted) ask(input.value.trim(), false);
+  });
+  attach.addEventListener('click', event => {
+    if (event.isTrusted) files.click();
+  });
+  files.addEventListener('change', () => {
+    addImages(Array.from(files.files));
+    files.value = '';
+  });
+  input.addEventListener('paste', event => {
+    if (!event.isTrusted) return;
+    const images = Array.from(event.clipboardData.items)
+      .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+      .map(item => item.getAsFile()).filter(Boolean);
+    if (!images.length) return;
+    if (!event.clipboardData.getData('text/plain')) event.preventDefault();
+    addImages(images);
+  });
+  get('#reset').addEventListener('click', () => {
+    resetConversation();
+    input.focus();
+  });
+  next.addEventListener('click', async event => {
+    if (!event.isTrusted || busy || moving) return;
+    moving = true;
+    refreshControls();
+    try {
+      const message = await dsNavigation.next(kind);
+      if (!message) {
+        selected = null;
+        resetConversation();
+        if (kind) refreshQuestions();
+      } else {
+        status.textContent = message;
+      }
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      moving = false;
+      refreshControls();
+    }
   });
   get('#close').addEventListener('click', () => setOpen(false));
   shadow.addEventListener('keydown', event => {
@@ -240,10 +383,14 @@
   });
   list.addEventListener('change', () => {
     selected = nodes[Number(list.value)];
-    conversation = null;
-    log.replaceChildren();
-    status.textContent = '';
+    resetConversation();
   });
+  document.addEventListener('click', event => {
+    if (event.isTrusted && event.target.closest?.('.problems-aside .subject-item:not(.active)')) {
+      selected = null;
+      resetConversation();
+    }
+  }, true);
 
   document.body.append(host);
   refreshRoute();

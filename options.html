@@ -10,8 +10,11 @@
 </head>
 <body>
   <main>
-    <h1>DeepSeek 问答设置</h1>
-    <p>模型：DeepSeek V4.1 Flash（<code>deepseek-flash</code>）。</p>
+    <header>
+      <span class="eyebrow">雨课堂扩展 · 学习助手</span>
+      <h1>DeepSeek 问答设置</h1>
+      <p>连接 DeepSeek V4.1 Flash，发送题目截图、图片与追问。</p>
+    </header>
     <form>
       <label for="api-key">DeepSeek API 密钥</label>
       <input id="api-key" type="password" autocomplete="off" spellcheck="false" maxlength="256" required>
@@ -21,8 +24,11 @@
       </div>
     </form>
     <p id="status" role="status"></p>
-    <p>密钥仅保存在当前 Firefox 配置中，不通过 Firefox 同步。发送问答时，密钥用于验证；所选题目的截图、文字与追问会发送给 DeepSeek，可能产生 API 费用。</p>
-    <p>Firefox 的截图接口会请求「访问所有网站的数据」。扩展只在雨课堂支持的题目页、你点击问答按钮时截取题目区域。拒绝该权限不影响视频续播。</p>
+    <section class="privacy" aria-labelledby="privacy-title">
+      <h2 id="privacy-title">权限与隐私</h2>
+      <p>密钥保存在当前 Firefox 配置中，不通过 Firefox 同步。提交的消息和图片会发给 DeepSeek，可能产生 API 费用。</p>
+      <p>Firefox 的截图接口要求「访问所有网站的数据」。只有你在支持的雨课堂题目页点击「问问DS」时，扩展才截取题目区域。拒绝授权不影响视频续播。</p>
+    </section>
   </main>
 </body>
 </html>
