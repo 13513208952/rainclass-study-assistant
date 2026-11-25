@@ -17,14 +17,19 @@ zip rainclass-study-assistant.zip manifest.json playback.js ds-*.js options.html
 
 `vendor/katex.min.js` 是 [KaTeX 0.19.1](https://github.com/KaTeX/KaTeX/tree/v0.19.1) 官方 npm 发行包中的 `dist/katex.min.js`，未修改；可通过 `npm pack katex@0.19.1` 获取后核对。其许可见 `vendor/KATEX-LICENSE`。
 
-### 自托管更新
+## 使用
 
-Firefox 从仓库的 [`updates.json`](updates.json) 检查更新。Mozilla 签名后，先将 `.xpi` 上传到 GitHub Releases，再在同一扩展 ID 的 `updates` 数组中登记 `version` 和指向 `.xpi` 文件的 HTTPS `update_link`。升级时提高版本号，并保持扩展 ID 不变。
-
-## 隐私
-
-- 问答默认未启用。API 密钥保存在本地 Firefox 配置，不同步；仅作为认证凭据发送至 `api.deepseek.com`。可在扩展设置删除密钥并停用问答。
-- 仅主动发送问答时，题目截图、文字、手动添加的附件及当前会话历史会按需发给 DeepSeek。回复和会话历史保存在页面内存中，不写入本地历史。服务端处理请参阅 [DeepSeek 隐私政策](https://www.deepseek.com/privacy)。
-- Firefox 的截图 API 要求用户可选授予「访问所有网站的数据」。扩展仅在受支持的雨课堂页面、主动点击「问问DS」时截取选定题目范围。拒绝授权不影响视频功能。不含遥测。
+- 1.问答默认未启用。你需要自己在设置界面配置自己的deepseek API,API仅保存在本地。
+- 2.配置完成API并启用扩展和问答功能后，雨课堂播放视频时如果播放完成会自动播放下一个没有完成学习的视频。
+- 注意：如果播放被打断了（比如雨课堂发现焦点丢失）不会帮你恢复播放。换句话说，如果你要维持视频正常播放，你最好在把窗口放在第二个显示器
+- 3.对于图文、讨论和作业栏目，右下角会出现一个聊天按钮，点击后展开AI助手，可以直接点击“问问DS”快捷询问这道题怎么做（章节标题和题目都会以图片方式发给它）
+- 4.你可以手动输入想要发送的提示词，而且可以上传图片附件，也可以粘贴图片一起发送，不过注意目前不支持其他格式的文件。
+- 5.deepseek助手会保留本次会话的上下文，但是一旦切换题目或者更换会话，上下文会全部丢失。
+- 6.没有做上下文压缩功能，一般来说也用不上，不要真的让超出上下文的事情发生。
+- 7.Firefox 的截图 API 要求用户可选授予「访问所有网站的数据」，因此你需要给扩展这个权限，否则没法使用deepseek快捷询问功能。
+- （但是视频自动联播是不受到影响的）
+- 服务端处理请参阅 [DeepSeek 隐私政策](https://www.deepseek.com/privacy)。
+- 
+  
 
 本项目采用 [MIT 许可](LICENSE)，第三方组件保留其原始许可。
