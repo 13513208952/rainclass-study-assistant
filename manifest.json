@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "雨课堂前台续播",
+  "version": "1.0.0",
+  "description": "手动播放后，静音并优先使用 2 倍速，在前台续播下一个未完成视频。",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "rainclass-foreground-playback@local",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.yuketang.cn/ai-workspace/lms-graph/*"],
+      "js": ["playback.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
