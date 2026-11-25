@@ -1,10 +1,11 @@
 const questionCapture = (() => {
   const richText = '.main-text-attachment .content-wrap .content';
   const examGroups = '.subject-item .exercise-item, .exam-result .result_item:has(.item-body)';
-  const questionGroups = `.problem-common__main, ${examGroups}`;
+  const homeworkGroup = '.container-problem .subject-item:has(> .item-body > div > .problem-body)';
+  const questionGroups = `.problem-common__main, ${examGroups}, ${homeworkGroup}`;
   const questions = `${questionGroups}, .problem-common__body, .problem-body, .question-content, ` +
     '.question-stem, .problem-stem, .container-problem .problem-content, .swiper-slide-active .problemContainer .courseware';
-  const frameSelector = '#iframeQuizId, .quiz-iframe, .exam-container iframe, .exam__cover iframe';
+  const frameSelector = `${ds.exerciseFrame}, #iframeQuizId, .quiz-iframe, .exam-container iframe, .exam__cover iframe`;
   const clipping = /^(auto|scroll|hidden|clip|overlay)$/;
   const scrollable = /^(auto|scroll|overlay)$/;
 
@@ -41,6 +42,10 @@ const questionCapture = (() => {
   function parts(node) {
     if (node.matches('.problem-common__main')) {
       return [...node.querySelectorAll(':scope > .problem-common__body')].filter(rendered);
+    }
+    if (node.matches(homeworkGroup)) {
+      return [...node.querySelectorAll(':scope > .item-type, :scope > .item-body > div > ' +
+        ':is(.problem-body, ul.list-unstyled-radio, ul.list-unstyled-checkbox)')].filter(rendered);
     }
     if (node.matches(examGroups)) {
       const parts = [...node.querySelectorAll('.item-body > .exam-font, .item-body > .item-title, ' +

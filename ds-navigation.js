@@ -8,7 +8,7 @@ const dsNavigation = (() => {
     return ['graph', 'forum', 'exercise'].includes(kind) && new URL(url).pathname.startsWith('/ai-workspace/lms-graph/');
   }
 
-  function waitFor(read, timeout = 5000) {
+  function waitFor(read, watchFrame = false) {
     const found = read();
     if (found) return Promise.resolve(found);
     return new Promise(resolve => {
@@ -16,10 +16,16 @@ const dsNavigation = (() => {
         const value = read();
         if (value) finish(value);
       });
-      const timer = setTimeout(() => finish(null), timeout);
+      // The outer document's observer cannot see iframe loads or their DOM changes.
+      const probe = watchFrame ? setInterval(() => {
+        const value = read();
+        if (value) finish(value);
+      }, 100) : null;
+      const timer = setTimeout(() => finish(null), 5000);
       function finish(value) {
         observer.disconnect();
         clearTimeout(timer);
+        clearInterval(probe);
         resolve(value);
       }
       observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
@@ -27,7 +33,10 @@ const dsNavigation = (() => {
   }
 
   function homeworkRows() {
-    return [...document.querySelectorAll(answerCard)].filter(row => row.getClientRects().length)
+    const frame = document.querySelector(ds.exerciseFrame);
+    const child = frame?.contentDocument;
+    const doc = frame ? (child?.location.pathname === new URL(frame.src).pathname ? child : null) : document;
+    return [...(doc?.querySelectorAll(answerCard) ?? [])].filter(row => row.getClientRects().length)
       .sort((a, b) => number(a) - number(b));
   }
 
@@ -45,7 +54,7 @@ const dsNavigation = (() => {
     if (target === active) return 'moved';
     const index = number(target);
     target.click();
-    return await waitFor(() => homeworkRows().some(row => row.classList.contains('active') && number(row) === index))
+    return await waitFor(() => homeworkRows().some(row => row.classList.contains('active') && number(row) === index), true)
       ? 'moved' : 'unknown';
   }
 
@@ -100,7 +109,7 @@ const dsNavigation = (() => {
           if (location.href !== openedUrl) return [];
           const visible = homeworkRows();
           return visible.length ? visible : null;
-        });
+        }, true);
         if (location.href !== openedUrl) return '';
         if (!rows) return '已打开下一份作业；答题卡未显示，请先打开作业题目。';
         if (await moveInHomework(rows, true) === 'unknown') return '已打开下一份作业，但无法确认第一道未完成题。';

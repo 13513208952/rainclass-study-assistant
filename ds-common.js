@@ -3,6 +3,7 @@ globalThis.ds = Object.freeze({
   endpoint: 'https://api.deepseek.com/chat/completions',
   keyName: 'deepseekApiKey',
   plainAnswersKey: 'deepseekPlainAnswers',
+  exerciseFrame: 'iframe#iframeExerciseId',
   access: {
     origins: ['<all_urls>'],
     data_collection: ['websiteContent', 'authenticationInfo'],
