@@ -5,8 +5,6 @@
   const directorySelector = '.learning-space-student-chapter-nav .nav-list';
   const rowSelector = '.leaf-item';
   const closedChapter = '.nav-item-title:not(.is-expand):has(.expand-icon)';
-  const completeMark = '.leaf-item-status .icon-yuanquangou-mianzhuang';
-  const lockedMark = '.leaf-item-status .icon-suoding';
 
   let intent;
   let run;
@@ -86,24 +84,6 @@
     schedule();
   }
 
-  function nextEntry(nav, current) {
-    const entries = nav.querySelectorAll(`${rowSelector}, ${closedChapter}`);
-    let afterCurrent = false;
-    for (const entry of entries) {
-      if (entry === current) {
-        afterCurrent = true;
-      } else if (entry.matches(closedChapter)) {
-        // A collapsed branch has no rows in the DOM. Read it before going past it.
-        if (!current || afterCurrent) return entry;
-      } else if (afterCurrent &&
-        /^(视频|video)$/i.test(entry.querySelector('.leaf-item-tag')?.textContent.trim()) &&
-        !entry.querySelector(`${completeMark}, ${lockedMark}`) &&
-        entry.querySelector('.leaf-item-status')) {
-        return entry;
-      }
-    }
-    return null;
-  }
 
   function advance() {
     if (!run) return;
@@ -140,7 +120,7 @@
     if (!nav || unitStatus(current) !== 'complete') return;
     if (run.expanding?.isConnected && !run.expanding.classList.contains('is-expand')) return;
 
-    const target = nextEntry(nav, current);
+    const target = nextDirectoryEntry(nav, /^(视频|video)$/i);
     if (!target) return stop();
     if (target.matches(closedChapter)) {
       run.expanding = target;

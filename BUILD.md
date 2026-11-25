@@ -1,6 +1,6 @@
 # Mozilla reviewer build instructions
 
-This source archive corresponds to Firefox extension **1.2.5**. All extension-owned JavaScript, HTML, and CSS is shipped as written, with no transpilation, bundling, minification, or generated application code.
+This source archive corresponds to Firefox extension **1.2.6**. All extension-owned JavaScript, HTML, and CSS is shipped as written, with no transpilation, bundling, minification, or generated application code.
 
 ## Environment
 

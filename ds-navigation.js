@@ -49,7 +49,7 @@ const dsNavigation = (() => {
     if (!remaining.length) return 'done';
     const active = rows.find(row => row.classList.contains('active'));
     const target = opening ? remaining[0] : remaining.find(row => !active || number(row) > number(active)) ??
-      remaining.find(row => row !== active);
+      remaining.findLast(row => row !== active);
     if (!target) return 'current';
     if (target === active) return 'moved';
     const index = number(target);
@@ -77,20 +77,8 @@ const dsNavigation = (() => {
     if (!nav?.querySelector('.leaf-item.is-active')) return '未找到当前目录项。';
     const expanded = new Set();
     while (location.href === here && nav.isConnected) {
-      let after = false;
-      let target;
-      for (const entry of nav.querySelectorAll(`.leaf-item, ${collapsed}`)) {
-        if (entry.matches('.leaf-item.is-active')) {
-          after = true;
-        } else if (after && (entry.matches(collapsed) ||
-          (eligible.test(entry.querySelector('.leaf-item-tag')?.textContent.trim()) &&
-           entry.querySelector('.leaf-item-status') &&
-           !entry.querySelector('.leaf-item-status :is(.icon-suoding, .icon-yuanquangou-mianzhuang)')))) {
-          target = entry;
-          break;
-        }
-      }
-      if (!target) return '目录后面没有未完成的图文、讨论或作业。';
+      const target = nextDirectoryEntry(nav, eligible);
+      if (!target) return '目录里没有其他未完成的图文、讨论或作业。';
       if (target.matches(collapsed)) {
         if (expanded.has(target)) return '无法展开后续目录，请手动展开后重试。';
         expanded.add(target);
