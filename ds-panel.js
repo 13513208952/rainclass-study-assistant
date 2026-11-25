@@ -24,6 +24,7 @@
     #log { overflow: auto; min-height: 56px; padding: 0 12px 8px; }
     #log p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; padding: 8px 10px;
       border: 1px solid var(--line); border-radius: 9px; }
+    .math-block { display: block; overflow-x: auto; padding: 4px 0; white-space: normal; }
     #log .user { background: var(--surface); } #log strong { display: block; margin-bottom: 3px; }
     form { align-items: flex-end; border-top: 1px solid var(--line); }
     textarea { min-width: 0; flex: 1; resize: vertical; min-height: 40px; max-height: 130px;
@@ -98,7 +99,9 @@
     item.className = role;
     const title = document.createElement('strong');
     title.textContent = role === 'user' ? '你' : 'DeepSeek';
-    item.append(title, document.createTextNode(text));
+    item.append(title);
+    if (role === 'assistant') appendDsMath(item, text);
+    else item.append(text);
     log.append(item);
     log.scrollTop = log.scrollHeight;
   }
