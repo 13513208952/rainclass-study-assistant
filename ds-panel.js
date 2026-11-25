@@ -10,7 +10,8 @@
   const sendIcon = icon('<path d="M12 19V5m-6 6 6-6 6 6"/>');
   const plusIcon = icon('<path d="M12 5v14M5 12h14"/>');
 
-  shadow.innerHTML = `<style>
+  // This template and its SVGs are extension constants, never reply or page data.
+  const panel = new DOMParser().parseFromString(`<body><style>
     :host { all: initial; position: fixed; inset: auto 20px 20px auto; z-index: 2147483647; color-scheme: light dark;
       --paper: light-dark(#fff,#202124); --ink: light-dark(#202124,#f3f4f6);
       --muted: light-dark(#666b74,#b2b6bf); --line: light-dark(#e5e6e9,#41434a);
@@ -130,7 +131,8 @@
         <button class="send" type="submit" title="发送" aria-label="发送">${sendIcon}</button></form>
       <p id="notice">仅「问问DS」自动截题；图片随消息发送。</p>
     </footer>
-  </aside>`;
+  </aside></body>`, 'text/html');
+  shadow.append(...panel.body.childNodes);
   const get = selector => shadow.querySelector(selector);
   const pane = get('aside');
   const launcher = get('#launch');
@@ -243,7 +245,7 @@
       remove.type = 'button';
       remove.title = `移除 ${file.name}`;
       remove.setAttribute('aria-label', remove.title);
-      remove.innerHTML = closeIcon;
+      remove.append(get('#close svg').cloneNode(true));
       remove.addEventListener('click', () => {
         if (busy || moving) return;
         attachments = attachments.filter(item => item !== file);

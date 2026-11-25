@@ -25,33 +25,73 @@ const dsMarkdown = (() => {
     }
   });
 
-  md.renderer.rules.ds_math = (tokens, i, _options, env) => {
-    const { content, meta } = tokens[i];
-    if (env.plain) return md.utils.escapeHtml(meta.raw);
-    try {
-      const output = katex.renderToString(content, {
-        displayMode: meta.display, output: 'mathml', trust: false, maxExpand: 500, maxSize: 30,
-      });
-      return meta.display ? `<span class="math-block">${output}</span>` : output;
-    } catch {
-      return md.utils.escapeHtml(meta.raw);
-    }
-  };
-  // Never load images referenced by model-generated Markdown.
-  md.renderer.rules.image = (tokens, i) => md.utils.escapeHtml(tokens[i].content);
-  md.renderer.rules.link_open = (tokens, i, options, _env, renderer) => {
-    tokens[i].attrSet('target', '_blank');
-    tokens[i].attrSet('rel', 'noopener noreferrer');
-    return renderer.renderToken(tokens, i, options);
-  };
+  md.disable(['html_block', 'html_inline']);
   return md;
 })();
 
+const dsMarkdownTags = new Set([
+  'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote',
+  'em', 'strong', 's', 'a', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+]);
+
 function renderDsAnswer(target, text, plain = false) {
-  const template = document.createElement('template');
-  template.innerHTML = dsMarkdown.render(text, { plain });
+  const fragment = document.createDocumentFragment();
+  const stack = [fragment];
+  function appendTokens(tokens) {
+    for (const token of tokens) {
+      const parent = stack.at(-1);
+      if (token.children && token.type === 'inline') {
+        appendTokens(token.children);
+      } else if (token.type === 'text' || token.type === 'image') {
+        parent.append(token.content);
+      } else if (token.type === 'softbreak' || token.type === 'hardbreak' || token.type === 'hr') {
+        parent.append(document.createElement(token.type === 'hr' ? 'hr' : 'br'));
+      } else if (token.type === 'code_inline' || token.type === 'code_block' || token.type === 'fence') {
+        const code = document.createElement('code');
+        code.textContent = token.content;
+        if (token.type === 'code_inline') parent.append(code);
+        else {
+          const pre = document.createElement('pre');
+          pre.append(code);
+          parent.append(pre);
+        }
+      } else if (token.type === 'ds_math') {
+        if (plain) parent.append(token.meta.raw);
+        else {
+          const span = document.createElement('span');
+          if (token.meta.display) span.className = 'math-block';
+          try {
+            katex.render(token.content, span, {
+              displayMode: token.meta.display, output: 'mathml', trust: false, maxExpand: 500, maxSize: 30,
+            });
+            parent.append(span);
+          } catch {
+            parent.append(token.meta.raw);
+          }
+        }
+      } else if (!token.hidden && dsMarkdownTags.has(token.tag)) {
+        if (token.nesting < 0) stack.pop();
+        else if (token.nesting > 0) {
+          const element = document.createElement(token.tag);
+          if (token.tag === 'a') {
+            const href = token.attrGet('href') ?? '';
+            if (/^https?:\/\//i.test(href)) {
+              element.href = href;
+              element.target = '_blank';
+              element.rel = 'noopener noreferrer';
+            }
+          } else if (token.tag === 'ol' && /^\d+$/.test(token.attrGet('start') ?? '')) {
+            element.start = Number(token.attrGet('start'));
+          }
+          parent.append(element);
+          stack.push(element);
+        }
+      }
+    }
+  }
+  appendTokens(dsMarkdown.parse(text, {}));
   if (!plain) {
-    target.replaceChildren(template.content);
+    target.replaceChildren(fragment);
     return;
   }
   const lines = [];
@@ -64,10 +104,11 @@ function renderDsAnswer(target, text, plain = false) {
     else if (node.nodeName === 'HR') lines.push('\n\n');
     else {
       for (const child of node.childNodes) walk(child);
-      if (/^(?:P|H[1-6]|LI|PRE|BLOCKQUOTE|TABLE|TR)$/.test(node.nodeName)) lines.push('\n');
+      if (/^(?:P|H[1-6]|PRE|BLOCKQUOTE|TABLE)$/.test(node.nodeName)) lines.push('\n\n');
+      else if (/^(?:LI|TR)$/.test(node.nodeName)) lines.push('\n');
       if (/^(?:TH|TD)$/.test(node.nodeName) && node.nextElementSibling) lines.push('\t');
     }
   }
-  walk(template.content);
+  walk(fragment);
   target.textContent = lines.join('').replace(/\n{3,}/g, '\n\n').trim();
 }
