@@ -77,7 +77,8 @@ async function askDeepSeek(message, sender) {
     const details = { 401: '请检查 API 密钥', 402: '账户余额不足', 403: '请检查密钥权限', 429: '请求过于频繁，请稍后再试' };
     throw new Error(`DeepSeek HTTP ${response.status}${details[response.status] ? `：${details[response.status]}` : ''}`);
   }
-  const answer = (await response.json())?.choices?.[0]?.message?.content?.trim();
+  // Filter before the answer reaches either the panel or its conversation history.
+  const answer = cleanDsOutput((await response.json())?.choices?.[0]?.message?.content);
   if (!answer) throw new Error('DeepSeek 没有返回可显示的内容。');
   return { answer: answer.slice(0, 20000) };
 }
