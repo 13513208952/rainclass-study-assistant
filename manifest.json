@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "雨课堂前台续播与问答",
+  "name": "雨课堂在线学习智能插件",
   "version": "1.2.2",
   "description": "前台续播未完成视频；按需将题目截图和文字发送给 DeepSeek Flash。",
   "browser_specific_settings": {
