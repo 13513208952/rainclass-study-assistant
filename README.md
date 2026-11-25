@@ -17,6 +17,10 @@ zip rainclass-study-assistant.zip manifest.json playback.js ds-*.js options.html
 
 `vendor/katex.min.js` 是 [KaTeX 0.19.1](https://github.com/KaTeX/KaTeX/tree/v0.19.1) 官方 npm 发行包中的 `dist/katex.min.js`，未修改；可通过 `npm pack katex@0.19.1` 获取后核对。其许可见 `vendor/KATEX-LICENSE`。
 
+### 自托管更新
+
+Firefox 从仓库的 [`updates.json`](updates.json) 检查更新。Mozilla 签名后，先将 `.xpi` 上传到 GitHub Releases，再在同一扩展 ID 的 `updates` 数组中登记 `version` 和指向 `.xpi` 文件的 HTTPS `update_link`。升级时提高版本号，并保持扩展 ID 不变。
+
 ## 隐私
 
 - 问答默认未启用。API 密钥保存在本地 Firefox 配置，不同步；仅作为认证凭据发送至 `api.deepseek.com`。可在扩展设置删除密钥并停用问答。
