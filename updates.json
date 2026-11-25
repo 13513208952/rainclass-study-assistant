@@ -5,6 +5,10 @@
         {
           "version": "1.2.5",
           "update_link": "https://github.com/13513208952/rainclass-study-assistant/releases/download/v1.2.5/rainclass-study-assistant-1.2.5.xpi"
+        },
+        {
+          "version": "1.2.6",
+          "update_link": "https://github.com/13513208952/rainclass-study-assistant/releases/download/v1.2.6/rainclass-study-assistant-1.2.6.xpi"
         }
       ]
     }
