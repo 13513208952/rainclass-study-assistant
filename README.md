@@ -11,6 +11,7 @@ Firefox 扩展，为雨课堂提供前台视频续播、未完成学习单元导
 不支持安卓端，请在桌面端火狐浏览器进行安装。目前主要在linux(Kubuntu)上进行测试，对于windows上firefox 浏览器的测试还在长期进行中，不过已经可以使用。
 
 tips:自行构建版本无mozilla官方签名，安装较为繁琐，如果您不是专业用户，请不要自行构建使用！
+
 自行构建试用：在 Firefox 打开 `about:debugging#/runtime/this-firefox`，选择「临时载入附加组件」，打开 `manifest.json`。正式安装使用 Mozilla 签名包。
 
 无需编译。打包时将 `manifest.json` 放在 ZIP 根目录：
