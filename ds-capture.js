@@ -130,6 +130,15 @@ const questionCapture = (() => {
     return parts(node).map(part => part.innerText.trim()).filter(Boolean).join('\n\n');
   }
 
+  function titleFor(node) {
+    return (node.ownerDocument.querySelector('.learning-space-control-unit .unit-title') ??
+      document.querySelector('.learning-space-control-unit .unit-title'));
+  }
+
+  function requestText(node) {
+    return [titleFor(node)?.innerText.trim(), textOf(node)].filter(Boolean).join('\n\n');
+  }
+
   const paint = () => new Promise(resolve => requestAnimationFrame(resolve));
 
   async function waitForImages(node) {
@@ -210,14 +219,58 @@ const questionCapture = (() => {
     }
   }
 
+  async function compose(images) {
+    if (images.length < 2) return images;
+    const decoded = [];
+    try {
+      for (const image of images) {
+        const bytes = Uint8Array.fromBase64(image.slice(image.indexOf(',') + 1));
+        decoded.push(await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' })));
+      }
+      const maxHeight = 4096;
+      const composites = [];
+      for (let start = 0; start < decoded.length;) {
+        let height = 0;
+        let width = 0;
+        let end = start;
+        while (end < decoded.length) {
+          const image = decoded[end];
+          const nextHeight = height + (height ? 12 : 0) + image.height;
+          if (end > start && nextHeight > maxHeight) break;
+          height = nextHeight;
+          width = Math.max(width, image.width);
+          end++;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width + 24;
+        canvas.height = height + 24;
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        let y = 12;
+        for (; start < end; start++) {
+          context.drawImage(decoded[start], 12, y);
+          y += decoded[start].height + 12;
+        }
+        composites.push(canvas.toDataURL('image/jpeg', 0.94));
+      }
+      return composites;
+    } finally {
+      for (const image of decoded) image.close();
+    }
+  }
+
   async function capture(node, url, host) {
     const images = [];
-    for (const part of parts(node)) {
+    const title = titleFor(node);
+    const sections = parts(node);
+    if (title && rendered(title) && !sections.some(part => part.contains(title))) sections.unshift(title);
+    for (const part of sections) {
       if (images.length === ds.maxImages) throw new Error('题目截图过长，请选择单道题再试。');
       images.push(...await capturePart(part, url, host, ds.maxImages - images.length));
     }
-    return images;
+    return compose(images);
   }
 
-  return { candidates, preferred, textOf, capture };
+  return { candidates, preferred, textOf, requestText, capture };
 })();

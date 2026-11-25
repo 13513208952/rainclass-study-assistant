@@ -289,7 +289,7 @@
         status.textContent = '正在截取题目…';
         const images = await questionCapture.capture(node, here, host);
         if (!valid()) return;
-        current.text = questionCapture.textOf(node).slice(0, ds.maxText);
+        current.text = questionCapture.requestText(node).slice(0, ds.maxText);
         current.images = [...new Set([...images, ...current.images])];
       }
       status.textContent = effort.value === 'none' ? '正在等待 DeepSeek 回复…' : 'DeepSeek 正在思考…';
